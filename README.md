@@ -48,6 +48,9 @@ Everything you need is in the `playground/` directory.
 7. Swap the system prompt to `playground/prompt_b_concise.txt`
 8. Run again, save as experiment: **"Concise Personality"**
 9. Compare experiments side by side
+10. Use **Loop** to analyze the results:
+    - *"What is concise failing on? Why is polite scoring better?"*
+    - *"Are there any specific inputs that tend to confuse the scorer more?"*
 
 ## Part 2: Code eval
 
