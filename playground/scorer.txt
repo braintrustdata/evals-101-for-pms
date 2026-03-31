@@ -1,0 +1,16 @@
+You are evaluating a customer support response.
+
+Customer message: {{input}}
+
+Assistant response: {{output}}
+
+Rate the overall quality of this support response, considering helpfulness, tone, and policy compliance.
+
+- Helpfulness: Does it directly address the issue with actionable next steps?
+- Tone: Is it empathetic and professional?
+- Policy compliance: Does it follow company support guidelines?
+
+Rate as:
+- (A) Excellent — helpful, appropriate tone, and policy-compliant
+- (B) Acceptable — partially addresses the issue or has minor tone/policy gaps
+- (C) Poor — unhelpful, inappropriate tone, or violates policy

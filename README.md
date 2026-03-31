@@ -1,75 +1,93 @@
-# Trace workshop: Evals for PMs
+# Evals 101 for PMs
 
-![Eval heatmap](assets/heatmap.png)
-## Why evals matter for PMs
+A hands-on workshop for product managers who want to understand how to evaluate AI features before shipping them.
 
-As a PM, you're responsible for deciding when an AI feature is ready to ship. But "it seems good" or "engineering told me it was ready" isn't a defensible answer when leadership asks how you know.
+## What you'll build
 
-Evals give you a structured way to answer: Are the responses meeting our brand guidelines and requirements? They turn subjective judgment into measurable criteria you can track across experiments.
+You'll evaluate a customer support chatbot by testing two different personalities — polite and concise — against a dataset of real customer complaints. You'll start in the Braintrust UI (no code), then move to a Python eval script, and finally build a multi-turn chat app with production logging.
 
-This workshop walks you through how to build an eval using the Braintrust UI. 
+## Workshop flow
 
-If you prefer working in code, you can do everything here using the [Braintrust SDK](https://www.braintrust.dev/docs/reference/sdk).
-
----
-
-## Scenario
-
-You're a PM at an e-commerce company. Your support team is drowning in customer complaints around refunds, shipping delays, and damaged items. Historically, humans have handled these tickets, but your team wants to move to AI to scale support.
-
-Before you ship, you want to verify: Are the responses meeting our brand guidelines?
-
-If AI responses don't match your brand voice—or worse, offer refunds you can't honor—you'll hear about it from customers and leadership alike.
-
-You'll run multiple experiments with different chatbot personalities:
-- Concise: short, direct responses
-- Polite: warm and empathetic tone
-- Refund-resistant: tries to offer alternatives before approving refunds
-
-Then you'll compare all experiments to decide which (if any) is ready to ship.
-
-![Experiment analysis comparing chatbot personalities](assets/experiment-analysis.png)
+1. **Playground eval** — Build an eval entirely in the Braintrust UI using the assets in `playground/`
+2. **Code eval** — Run the same eval programmatically with `eval_customer_support.py`
+3. **Nondeterminism + trials** — See why single-run scores aren't reliable, and how `trial_count` fixes that
+4. **Multi-turn chat** — Run `chat_app.py` to generate real conversations and see production traces
 
 ---
 
-## Setup (in the Braintrust UI)
+## Setup
 
-1. Go to [braintrust.dev](https://www.braintrust.dev) and sign in
-2. Create a new project, name it something like "Customer Support Eval"
-3. Go to Datasets tab
-4. Upload `dataset.csv` from this repo
-5. Go to Playgrounds tab and create a new playground
-5. Paste in your system prompt from `prompt_polite.txt` in this repo
-6. Choose your model
-7. Click on +Scorer > Create custom scorer > paste in the criteria from `scorer_brand_alignment.txt`
-8. Under Choice Scores, map N to score 0, and Y to score 1, and press save
-9. Press Run in the top right corner
-10. Click +Experiment and name it "Polite Customer Support"
+### Braintrust account
 
-Repeat steps 5-10 for each personality variant (`prompt_concise.txt`, `prompt_refund_resistant.txt`) you want to test.
+1. Sign up at [braintrust.dev](https://www.braintrust.dev) (free tier works)
+2. Go to **Settings → Secrets** and add your OpenAI API key
 
-![Braintrust Playground showing customer support eval](assets/playground.png)
+### Local environment (for Parts 2–4)
+
+```bash
+pip install -r requirements.txt
+export BRAINTRUST_API_KEY="your-api-key"
+export OPENAI_API_KEY="your-openai-api-key"
+```
 
 ---
 
-## What to look for
+## Part 1: Playground eval (no code)
 
-1. BrandAlignment score: Which personality had the highest overall score? This is your leading candidate.
-2. Hard edge cases: Are there specific complaints that score poorly across all personalities? These may require special handling or escalation paths.
-3. Failure patterns: When a personality scores low, look at why. Is "polite" too vague about policies? Is "concise" coming across as curt? Understanding the pattern helps you iterate.
+Everything you need is in the `playground/` directory.
+
+1. Create a new project in Braintrust: **"Customer Support Chatbot"**
+2. Go to **Datasets** → import `playground/customer_complaints.csv`
+3. Open the **Playground**, connect the dataset, set user message to `{{input}}`
+4. Paste the system prompt from `playground/prompt_a_polite.txt`
+5. Add a scorer using the prompt from `playground/scorer.txt`
+   - Name it **"Brand Alignment"**
+   - Set choice scores: **A = 1.0, B = 0.5, C = 0.0**
+   - Turn on **chain-of-thought**
+6. Run, review scores, save as experiment: **"Polite Personality"**
+7. Swap the system prompt to `playground/prompt_b_concise.txt`
+8. Run again, save as experiment: **"Concise Personality"**
+9. Compare experiments side by side
+
+## Part 2: Code eval
+
+```bash
+python3 eval_customer_support.py
+```
+
+This runs the same polite vs. concise comparison as Part 1, but in code. Open the Braintrust UI to see the results.
+
+## Part 3: Nondeterminism + trials
+
+The scores from Part 2 probably won't exactly match Part 1 — that's LLM nondeterminism at work.
+
+Uncomment the `trial_count=3` section at the bottom of `eval_customer_support.py` and run again. Trial averaging gives you more stable, trustworthy scores.
+
+## Part 4: Multi-turn chat
+
+```bash
+python3 chat_app.py
+```
+
+Have a conversation, then check the production logs in the Braintrust UI. Each conversation is logged as a single trace with nested turn spans.
 
 ---
 
-## Discussion: Would you ship this?
+## Files
 
-![Vibe check comic](assets/vibe-comic.png)
-
-There's no universal threshold, but we suggest setting a specific benchmark (like 95% on BrandAlignment) as a reasonable bar for being ready to ship to production. If your top personality is hitting 90%+ CONSISTENTLY with no major category failures, you're likely ready to ship. If scores are in the 70-80% range, identify the failure patterns and iterate on your prompt.
-
-For example, if the "polite" support personality consistently fails on proactively suggesting next steps, try adding that behavior explicitly to the prompt and re-running the eval. Keep tweaking and iterating until you can close the gap in your eval scores.
+```
+playground/
+  customer_complaints.csv    # Dataset (16 customer messages)
+  prompt_a_polite.txt        # Polite persona system prompt
+  prompt_b_concise.txt       # Concise persona system prompt
+  scorer.txt                 # Brand Alignment scorer (A/B/C)
+eval_customer_support.py     # Code-based eval with trial_count demo
+chat_app.py                  # Multi-turn chat app with Braintrust logging
+requirements.txt             # Python dependencies
+```
 
 ---
 
 ## Questions?
 
-Reach out to [Jess](https://www.linkedin.com/in/jessica-wang-a1aa15ba/) or [Eric](https://www.linkedin.com/in/erictliu/)!
+Reach out to [Jess](https://www.linkedin.com/in/jessica-wang-a1aa15ba/)!
